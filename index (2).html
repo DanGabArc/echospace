@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EchoSpace</title>
+<style>
+:root{--bg:#080d1a;--line:rgba(185,211,255,.2);--text:#f1f6ff;--muted:#a9b8d2;--cyan:#67e8f9;--good:#7bf1b6;--danger:#ffb4b4}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:radial-gradient(circle at 20% 0,#172552 0,transparent 34rem),var(--bg);color:var(--text);min-height:100vh}
+.shell{max-width:1100px;margin:auto;padding:24px 18px 40px}.top{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}h1{margin:0;font-size:clamp(2rem,5vw,3.2rem);letter-spacing:-.05em}.tag{max-width:380px;color:var(--muted);line-height:1.45;margin:6px 0 0}
+.lang{display:flex;gap:6px;align-items:start}.grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(280px,.8fr);gap:16px}.card{background:rgba(18,28,52,.93);border:1px solid var(--line);border-radius:18px}
+.arena,.side,.about{padding:18px}.hud{display:flex;justify-content:space-between;gap:12px;margin-bottom:14px;font-weight:700}.compass{color:var(--cyan)}
+.room{position:relative;width:min(100%,560px);aspect-ratio:1;margin:auto;border-radius:14px;overflow:hidden;background:#071323;border:1px solid rgba(103,232,249,.3)}
+.cell{position:absolute;width:10%;height:10%;display:none}.reveal .cell{display:block}.G{background:#5fb7e8}.W{background:#9a6b3f}.M{background:#8a93a6}.B{background:#444}.exit{background:var(--good);border-radius:50%;transform:scale(.6)}
+.player{position:absolute;width:7%;height:7%;z-index:3;border-radius:50%;background:var(--cyan);box-shadow:0 0 16px var(--cyan);transition:left .1s,top .1s}.player::after{content:"";position:absolute;left:50%;top:-3px;width:0;height:0;transform:translateX(-50%);border:5px solid transparent;border-bottom:10px solid #fff}
+.reveal::after{content:attr(data-label);position:absolute;right:8px;top:8px;z-index:4;font-size:.7rem;color:#0a1020;background:var(--good);padding:3px 6px;border-radius:5px;font-weight:800}.dot{position:absolute;width:5px;height:5px;margin:-2.5px;background:#fff;border-radius:50%;z-index:2}
+.side{display:flex;flex-direction:column;gap:12px}.readout{padding:14px;border-radius:12px;background:rgba(5,12,27,.6);border:1px solid var(--line)}.readout h2{font-size:.95rem;margin:0 0 6px}.readout p{margin:0;color:var(--muted);line-height:1.45;font-size:.9rem}
+.meter{height:7px;border-radius:8px;background:#202a43;overflow:hidden;margin:10px 0}.meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,#a78bfa,var(--cyan))}
+.metrics{display:flex;gap:8px}.metric{flex:1;background:rgba(255,255,255,.05);border-radius:10px;padding:9px}.metric b{display:block;font-size:1.3rem;color:var(--cyan)}.metric span{color:var(--muted);font-size:.8rem}
+.row{display:flex;gap:8px;flex-wrap:wrap}.btn{border:1px solid var(--line);background:#1a2745;color:var(--text);border-radius:10px;padding:10px 13px;font:inherit;font-weight:600;cursor:pointer}.btn:hover{border-color:var(--cyan)}.btn.primary{background:#44459e}.btn[aria-pressed=true]{outline:2px solid var(--cyan)}
+:focus-visible{outline:3px solid #fff;outline-offset:2px}label{color:var(--muted);font-size:.9rem;display:flex;gap:8px;align-items:center}input[type=range]{flex:1}
+.mobile{display:grid;grid-template-columns:repeat(3,52px);gap:6px;justify-content:center}.mobile .b{visibility:hidden}.mobile .wide{grid-column:span 3}
+.notice{font-size:.8rem;color:var(--muted);line-height:1.4;margin:0}.about{margin-top:16px}.about h2{margin:0 0 6px;font-size:1.1rem}.about p{color:var(--muted);line-height:1.5;margin:6px 0}.about .disc{color:var(--danger)}
+.modal{position:fixed;inset:0;background:rgba(3,7,17,.8);display:none;place-items:center;padding:18px;z-index:20}.modal.show{display:grid}.box{max-width:460px;padding:28px;text-align:center}.box h2{margin:0 0 8px;color:var(--good)}.box p{color:var(--muted);line-height:1.5}
+.sr{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}.ao .vis{visibility:hidden}
+@media(max-width:760px){.grid{grid-template-columns:1fr}.arena,.side{padding:14px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main class="shell">
+<header class="top"><div><h1>EchoSpace</h1><p class="tag" data-i="sub"></p></div>
+<div class="lang" role="group" aria-label="Language"><button class="btn" data-lang="en" aria-pressed="true">EN</button><button class="btn" data-lang="ru" aria-pressed="false">RU</button><button class="btn" data-lang="kk" aria-pressed="false">KZ</button></div></header>
+<section class="grid">
+<section class="card arena"><div class="hud"><span id="status"></span><span class="compass" id="compass"></span></div><div class="room vis" id="room"><div class="player" id="player"></div></div></section>
+<aside class="card side">
+<div class="readout vis"><h2 data-i="ro"></h2><p id="hint"></p><div class="meter"><i id="meter"></i></div><p id="dist"></p></div>
+<div class="metrics"><div class="metric"><b id="steps">0</b><span data-i="st"></span></div><div class="metric"><b id="pings">0</b><span data-i="pg"></span></div></div>
+<div class="row"><button class="btn primary" id="startBtn"></button><button class="btn" id="resetBtn" data-i="reset"></button><button class="btn" id="soundBtn" aria-pressed="true"></button><button class="btn" id="aoBtn" aria-pressed="false" data-i="ao"></button></div>
+<label><span data-i="vol"></span><input type="range" id="vol" min="0" max="100" value="60"></label>
+<label><input type="checkbox" id="guide" checked><span data-i="guide"></span></label>
+<div class="mobile"><button class="btn b" tabindex="-1" aria-hidden="true">.</button><button class="btn" data-move="north">↑</button><button class="btn b" tabindex="-1" aria-hidden="true">.</button><button class="btn" data-move="west">←</button><button class="btn" data-move="south">↓</button><button class="btn" data-move="east">→</button><button class="btn wide" id="pingBtn" data-i="ping"></button><button class="btn wide" id="bcnBtn" data-i="bcn"></button></div>
+<p class="notice" data-i="ctl"></p>
+</aside></section>
+<section class="card about"><h2 data-i="abh"></h2><p data-i="abt"></p><p class="disc" data-i="disc"></p></section>
+</main>
+<div class="modal" id="modal"><section class="card box" role="dialog" aria-modal="true" aria-labelledby="mt"><h2 id="mt" data-i="ttl"></h2><p id="res"></p><p data-i="refl"></p><button class="btn primary" id="againBtn" data-i="again"></button></section></div>
+<div class="sr" id="live" aria-live="polite"></div>
+<script>
+(()=>{
+const L={en:{sub:"A small experiment in how meaning can emerge through sound, attention and movement.",ro:"Sonar readout",st:"steps",pg:"signals",reset:"Reset",ao:"Audio only",vol:"Volume",guide:"Guided intro",ping:"Send ping (Space)",bcn:"Exit signal (B)",start:"Start",running:"Running",sOn:"Sound: on",sOff:"Sound: off",ready:"Ready. Find the exit by listening.",play:"Exploring",found:"Exit found",fc:"Facing {d}",dn:"north",de:"east",ds:"south",dw:"west",ctl:"Arrows / WASD: move · Shift+arrow: turn without moving · Space or P: ping · B: exit signal. The room stays hidden until you finish.",h0:"Press Start, then ping to sense the surface ahead.",h1:"Ping to sense the surface ahead. B gives the exit signal.",none:"No signal yet",n1:"Very close: obstacle directly ahead.",nN:"Close surface: {n} clear tile(s) ahead.",oN:"Open direction: {n} clear tiles ahead.",bump:"A solid boundary stops your movement.",bt:"Exit signal: {f}, {d}.",far:"far",close:"close",ahead:"ahead",right:"to your right",behind:"behind you",left:"to your left",g0:"1/4. Press Space (or P) to ping the surface ahead.",g1:"2/4. Press B. Higher pitch means closer; stereo shows left or right.",g2:"3/4. Move with arrows or WASD. Shift+arrow turns without moving.",g3:"4/4. Listen and find the exit.",ttl:"Exit reached",res:"You finished in {s} steps and {p} signals.",refl:"Which cue did you use: delay, pitch or timbre? What did you learn through movement rather than sight? Nothing is stored.",again:"Try again",lab:"MAP REVEALED",abh:"Why this matters philosophically",abt:"EchoSpace asks whether perception is only visual. The echo comes back after a delay that grows with distance, and each material answers with its own timbre (glass, wood, metal). Meaning appears through action: move, listen, interpret, revise. Inspired by SEZUAL (Kazakhstan); it uses a simplified sound model.",disc:"Educational simulation, not an assistive device. Not for navigation, safety or medical use."},
+ru:{sub:"Небольшой эксперимент о том, как смысл возникает через звук, внимание и движение.",ro:"Показания сонара",st:"шагов",pg:"сигналов",reset:"Сброс",ao:"Только звук",vol:"Громкость",guide:"Обучение",ping:"Сигнал (Пробел)",bcn:"Сигнал выхода (B)",start:"Начать",running:"Идёт",sOn:"Звук: вкл",sOff:"Звук: выкл",ready:"Готово. Найдите выход на слух.",play:"Исследование",found:"Выход найден",fc:"Направление: {d}",dn:"север",de:"восток",ds:"юг",dw:"запад",ctl:"Стрелки / WASD: движение · Shift+стрелка: поворот на месте · Пробел или P: сигнал · B: сигнал выхода. Комната скрыта до конца.",h0:"Нажмите «Начать», затем подайте сигнал, чтобы почувствовать поверхность впереди.",h1:"Подайте сигнал, чтобы почувствовать поверхность впереди. B даёт сигнал выхода.",none:"Сигнала пока нет",n1:"Совсем близко: препятствие прямо впереди.",nN:"Близкая поверхность: впереди свободных клеток: {n}.",oN:"Открытое направление: впереди свободных клеток: {n}.",bump:"Сплошная граница не пускает вас.",bt:"Сигнал выхода: {f}, {d}.",far:"далеко",close:"близко",ahead:"впереди",right:"справа",behind:"позади",left:"слева",g0:"1/4. Нажмите Пробел (или P), чтобы послать сигнал вперёд.",g1:"2/4. Нажмите B. Выше тон значит ближе; стерео показывает лево или право.",g2:"3/4. Идите стрелками или WASD. Shift+стрелка поворачивает на месте.",g3:"4/4. Слушайте и найдите выход.",ttl:"Выход найден",res:"Вы прошли комнату за {s} шагов и {p} сигналов.",refl:"Чем вы пользовались: задержкой, высотой или тембром? Что вы узнали через движение, а не зрение? Ничего не сохраняется.",again:"Ещё раз",lab:"КАРТА ОТКРЫТА",abh:"Философский смысл",abt:"EchoSpace спрашивает, только ли зрительно восприятие. Эхо возвращается с задержкой, растущей с расстоянием, а каждый материал (стекло, дерево, металл) отвечает своим тембром. Смысл возникает через действие: двигаться, слушать, истолковывать, пересматривать. Вдохновлено казахстанским проектом SEZUAL; используется упрощённая звуковая модель.",disc:"Образовательная симуляция, не вспомогательное устройство. Не для навигации, безопасности или медицины."},
+kk:{sub:"Дыбыс, зейін және қозғалыс арқылы мағына қалай пайда болатыны туралы шағын эксперимент.",ro:"Сонар көрсеткіші",st:"қадам",pg:"сигнал",reset:"Қайта бастау",ao:"Тек дыбыс",vol:"Дыбыс деңгейі",guide:"Нұсқаулық",ping:"Сигнал (Space)",bcn:"Шығу сигналы (B)",start:"Бастау",running:"Жүріп жатыр",sOn:"Дыбыс: қосулы",sOff:"Дыбыс: өшірулі",ready:"Дайын. Шығуды тыңдап табыңыз.",play:"Зерттеу",found:"Шығу табылды",fc:"Бағыт: {d}",dn:"солтүстік",de:"шығыс",ds:"оңтүстік",dw:"батыс",ctl:"Көрсеткілер / WASD: жүру · Shift+көрсеткі: орнында бұрылу · Space немесе P: сигнал · B: шығу сигналы. Бөлме соңына дейін жасырын.",h0:"Бастауды басыңыз, сосын алдыңыздағы бетті сезу үшін сигнал жіберіңіз.",h1:"Алдыңыздағы бетті сезу үшін сигнал жіберіңіз. B шығу сигналын береді.",none:"Сигнал әлі жоқ",n1:"Өте жақын: алдыңызда тосқауыл тұр.",nN:"Жақын бет: алдыңызда бос ұяшық: {n}.",oN:"Ашық бағыт: алдыңызда бос ұяшық: {n}.",bump:"Тұтас шекара жолды жауып тұр.",bt:"Шығу сигналы: {f}, {d}.",far:"алыс",close:"жақын",ahead:"алдыңызда",right:"оң жақта",behind:"артыңызда",left:"сол жақта",g0:"1/4. Алға сигнал жіберу үшін Space (немесе P) басыңыз.",g1:"2/4. B басыңыз. Дыбыс биік болса, жақын; стерео сол не оң жақты көрсетеді.",g2:"3/4. Көрсеткілермен немесе WASD-пен жүріңіз. Shift+көрсеткі орнында бұрады.",g3:"4/4. Тыңдап, шығуды табыңыз.",ttl:"Шығуға жеттіңіз",res:"Сіз бөлмені {s} қадам және {p} сигналмен өттіңіз.",refl:"Нені пайдаландыңыз: кешігуді, биіктікті немесе тембрді? Көру емес, қозғалыс арқылы не білдіңіз? Ештеңе сақталмайды.",again:"Қайталау",lab:"КАРТА АШЫЛДЫ",abh:"Философиялық мағынасы",abt:"EchoSpace қабылдау тек көру ме деп сұрайды. Жаңғырық қашықтыққа қарай кешігіп оралады, ал әр материал (шыны, ағаш, металл) өз тембрімен жауап береді. Мағына іс-әрекет арқылы пайда болады: жүру, тыңдау, түсіндіру, қайта қарау. Қазақстандық SEZUAL жобасынан шабыттанған; жеңілдетілген дыбыс моделі қолданылады.",disc:"Білім беру симуляциясы, көмекші құрал емес. Навигацияға, қауіпсіздікке немесе медицинаға арналмаған."}};
+const MAP=["..........",".WW..G.M..",".....G.M..",".M.W.G.M..",".M.W...M.W",".M.WGG.M.W","....M.....",".MM...G.W.","...W..GGW.","...W.....E"],N=10,EX={x:9,y:9};
+const MAT={G:{r:[1,2.76],f:1500,d:.14,w:'sine'},W:{r:[1],f:330,d:.07,w:'triangle'},M:{r:[1,1.5,2.1],f:720,d:.4,w:'sawtooth'},B:{r:[1],f:190,d:.12,w:'sine'}};
+const V={north:[0,-1],south:[0,1],west:[-1,0],east:[1,0]},DK={north:'dn',east:'de',south:'ds',west:'dw'},ROT={north:0,east:90,south:180,west:270};
+const $=id=>document.getElementById(id),room=$('room'),player=$('player');
+let lang='en',pos,facing,steps,pings,running,sound=true,path,audio,master,stage,tog=false,cur={};
+const t=(k,v)=>{let s=L[lang][k]||L.en[k];for(const i in v)s=s.replace('{'+i+'}',v[i]);return s};
+const guided=()=>$('guide').checked,cell=v=>`${(v+.5)*10}%`;
+const matAt=(x,y)=>x<0||y<0||x>=N||y>=N?'B':('.SE'.includes(MAP[y][x])?null:MAP[y][x]);
+function say(k,v){cur.hint=[k,v];const s=t(k,v);$('hint').textContent=s;tog=!tog;$('live').textContent=s+(tog?'\u200b':'')}
+function setStatus(k){cur.status=k;$('status').textContent=t(k)}
+function setDist(k,v){cur.dist=[k,v];$('dist').textContent=t(k,v)}
+function lbl(){$('startBtn').textContent=t(running?'running':'start');$('soundBtn').textContent=t(sound?'sOn':'sOff');$('compass').textContent=t('fc',{d:t(DK[facing])});room.dataset.label=t('lab');
+document.querySelectorAll('[data-move]').forEach(b=>b.setAttribute('aria-label',t(DK[b.dataset.move])))}
+function applyLang(){document.documentElement.lang=lang==='kk'?'kk':lang;document.querySelectorAll('[data-i]').forEach(e=>e.textContent=t(e.dataset.i));
+document.querySelectorAll('[data-lang]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.lang===lang));lbl();setStatus(cur.status);setDist(...cur.dist);$('hint').textContent=t(...cur.hint);if($('modal').classList.contains('show'))$('res').textContent=t('res',{s:steps,p:pings})}
+function drawMap(){room.querySelectorAll('.cell,.dot').forEach(e=>e.remove());MAP.forEach((r,y)=>[...r].forEach((c,x)=>{if('.S'.includes(c))return;const d=document.createElement('div');d.className='cell '+(c==='E'?'exit':c);d.style.left=x*10+'%';d.style.top=y*10+'%';room.append(d)}))}
+function render(){player.style.left=cell(pos.x);player.style.top=cell(pos.y);player.style.transform=`translate(-50%,-50%) rotate(${ROT[facing]}deg)`;$('steps').textContent=steps;$('pings').textContent=pings;lbl()}
+function reset(){pos={x:0,y:9};facing='north';steps=0;pings=0;path=[{...pos}];running=false;stage=0;room.classList.remove('reveal');$('modal').classList.remove('show');$('meter').style.width=0;cur={status:'ready',hint:['h0'],dist:['none']};drawMap();render();applyLang()}
+function showGuide(){if(guided()&&stage<4)say('g'+stage);else say('h1')}
+function act(a){if(guided()&&['ping','beacon','move'][stage]===a){stage++;showGuide()}}
+function start(){running=true;getAudio();setStatus('play');stage=0;showGuide();lbl()}
+function getAudio(){if(!audio){audio=new(window.AudioContext||window.webkitAudioContext)();master=audio.createGain();master.gain.value=$('vol').value/100*.6;master.connect(audio.destination)}if(audio.state==='suspended')audio.resume()}
+function tone(f,d,v,delay=0,type='sine',pan=0){if(!audio||!sound)return;const T=audio.currentTime+delay,o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(.0001,T);g.gain.exponentialRampToValueAtTime(Math.max(v,.0002),T+.01);g.gain.exponentialRampToValueAtTime(.0001,T+d);o.connect(g);let n=g;if(audio.createStereoPanner){const p=audio.createStereoPanner();p.pan.value=pan;g.connect(p);n=p}n.connect(master);o.start(T);o.stop(T+d+.05)}
+function ahead(){const d=V[facing];let n=0,x=pos.x,y=pos.y,m;do{x+=d[0];y+=d[1];n++;m=matAt(x,y)}while(!m);return{n,m}}
+function ping(){if(!running)return;act('ping');const{n,m}=ahead();pings++;$('meter').style.width=Math.max(10,(1-(n-1)/9)*100)+'%';
+if(n===1)setDist('n1');else if(n<=3)setDist('nN',{n:n-1});else setDist('oN',{n:n-1});say(n===1?'n1':n<=3?'nN':'oN',{n:n-1});
+const M=MAT[m];tone(2200,.02,.3,0,'square');M.r.forEach((r,i)=>tone(M.f*r,M.d,.5/(1+.25*n)/(i+1),.09*n,M.w));render()}
+function beacon(){if(!running)return;act('beacon');pings++;const dx=EX.x-pos.x,dy=EX.y-pos.y,f=V[facing],fw=dx*f[0]+dy*f[1],sd=dx*-f[1]+dy*f[0],d=Math.abs(dx)+Math.abs(dy);
+const fr=420+600*(1-Math.min(d,14)/14),pan=Math.max(-1,Math.min(1,sd/4));tone(fr,.12,.35,0,'sine',pan);tone(fr,.12,.35,.2,'sine',pan);
+const dir=Math.abs(sd)>=Math.abs(fw)?(sd>0?'right':'left'):(fw>=0?'ahead':'behind');say('bt',{f:t(d>8?'far':'close'),d:t(dir)});render()}
+function move(dir,turn){if(!running)return;facing=dir;if(turn){render();say('fc',{d:t(DK[dir])});return}
+const d=V[dir],nx=pos.x+d[0],ny=pos.y+d[1];if(matAt(nx,ny)){say('bump');tone(160,.09,.1,0,'sine');render();return}
+pos={x:nx,y:ny};steps++;path.push({...pos});act('move');render();if(nx===EX.x&&ny===EX.y)finish()}
+function finish(){running=false;$('aoBtn').setAttribute('aria-pressed',false);document.body.classList.remove('ao');room.classList.add('reveal');
+path.forEach(p=>{const i=document.createElement('i');i.className='dot';i.style.left=cell(p.x);i.style.top=cell(p.y);room.append(i)});setStatus('found');say('found');
+$('res').textContent=t('res',{s:steps,p:pings});$('modal').classList.add('show');$('againBtn').focus();tone(660,.12,.3);tone(880,.18,.3,.14);lbl()}
+const KM={arrowup:'north',w:'north',arrowdown:'south',s:'south',arrowleft:'west',a:'west',arrowright:'east',d:'east'};
+document.addEventListener('keydown',e=>{if(/INPUT|SELECT/.test(e.target.tagName))return;const k=e.key.toLowerCase(),onBtn=!!e.target.closest('button');
+if(onBtn&&(e.code==='Space'||k==='enter'))return;
+if(e.code==='Space'||k==='p'){e.preventDefault();ping()}else if(k==='b'){beacon()}else if(KM[k]){e.preventDefault();move(KM[k],e.shiftKey)}});
+$('startBtn').onclick=start;$('resetBtn').onclick=reset;$('againBtn').onclick=()=>{reset();start()};$('pingBtn').onclick=ping;$('bcnBtn').onclick=beacon;
+document.querySelectorAll('[data-move]').forEach(b=>b.onclick=()=>move(b.dataset.move));
+document.querySelectorAll('[data-lang]').forEach(b=>b.onclick=()=>{lang=b.dataset.lang;applyLang()});
+$('soundBtn').onclick=()=>{sound=!sound;$('soundBtn').setAttribute('aria-pressed',sound);lbl()};
+$('aoBtn').onclick=()=>{const on=$('aoBtn').getAttribute('aria-pressed')!=='true';$('aoBtn').setAttribute('aria-pressed',on);document.body.classList.toggle('ao',on)};
+$('vol').oninput=()=>{if(master)master.gain.value=$('vol').value/100*.6};
+$('guide').onchange=()=>{if(running){stage=0;showGuide()}};
+reset();
+})();
+</script>
+</body>
+</html>
